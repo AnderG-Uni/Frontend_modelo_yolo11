@@ -10,8 +10,10 @@ function Escaner() {
 
   const [mostrarTarjetaExito, setMostrarTarjetaExito] = useState(false);
   const [datosVehiculoExitoso, setDatosVehiculoExitoso] = useState(null);
-  // NUEVO: Estado para saber si la tarjeta debe ser verde (Ingreso) o azul (Salida)
   const [accionVehiculo, setAccionVehiculo] = useState('INGRESO');
+
+  // EL CANDADO DE SEGURIDAD: Evita enviar fotos si Python está ocupado
+  const procesandoRef = useRef(false);
 
   const iniciarCamara = async () => {
     try {
@@ -19,6 +21,7 @@ function Escaner() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       if (videoRef.current) videoRef.current.srcObject = stream;
       setEscaneando(true);
+      procesandoRef.current = false; // Liberamos el candado al iniciar
       setResultado({ estado: 'BUSCANDO', texto: 'Analizando fotogramas...' });
     } catch (error) {
       alert("Error al acceder a la cámara.");
@@ -40,18 +43,27 @@ function Escaner() {
     let intervalo;
     let escaneoActivo = true; 
 
-    const capturarYEnviar = () => {
-      if (!videoRef.current || !canvasRef.current) return;
+    const capturarYEnviar = async () => {
+      // SI PYTHON AÚN ESTÁ PROCESANDO, O SI LA CÁMARA SE APAGÓ, IGNORAMOS ESTE CICLO
+      if (!videoRef.current || !canvasRef.current || procesandoRef.current || !escaneoActivo) return;
+
+      // CERRAMOS EL CANDADO
+      procesandoRef.current = true;
+
       const ctx = canvasRef.current.getContext('2d');
       ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
 
       canvasRef.current.toBlob(async (blob) => {
-        const formData = new FormData(); formData.append('imagen', blob, 'frame.jpg');
+        const formData = new FormData(); 
+        formData.append('imagen', blob, 'frame.jpg');
+        
         try {
-          const response = await fetch('http://localhost:3000/api/v1/reconocimiento/escanear', { method: 'POST', body: formData });
+          const response = await fetch('http://localhost:3000/api/v1/reconocimiento/escanear', { 
+            method: 'POST', body: formData 
+          });
           const data = await response.json();
 
-          if (!escaneoActivo) return;
+          if (!escaneoActivo) return; // Si apagó la cámara mientras llegaba la respuesta, ignoramos
 
           if (data.box) {
             setBoxUI({ ...data.box, color: data.estado === 'OK' ? '#22c55e' : '#ef4444', etiqueta: `${data.placa} ${data.confianza}%` });
@@ -63,7 +75,7 @@ function Escaner() {
             setResultado({ estado: 'OK', texto: `${data.mensaje} • ${data.placa}` });
             detenerCamara(); 
             setDatosVehiculoExitoso(data.datosVehiculo);
-            setAccionVehiculo(data.accion); // 'INGRESO' o 'SALIDA'
+            setAccionVehiculo(data.accion);
             setMostrarTarjetaExito(true);
           } else if (data.estado === 'FAIL' && data.placa) {
             setResultado({ estado: 'FAIL', texto: data.mensaje });
@@ -72,12 +84,20 @@ function Escaner() {
           }
         } catch (error) {
           if (escaneoActivo) console.error("Error contactando al API");
+        } finally {
+          // IMPORTANTE: SIN IMPORTAR SI FALLÓ O FUNCIONÓ, ABRIMOS EL CANDADO PARA LA SIGUIENTE FOTO
+          if (escaneoActivo) procesandoRef.current = false;
         }
       }, 'image/jpeg', 0.8);
     };
 
-    if (escaneando) intervalo = setInterval(capturarYEnviar, 500); 
-    return () => { escaneoActivo = false; clearInterval(intervalo); };
+    // Revisamos muy rápido (cada 200ms), pero gracias al candado, solo disparará cuando Python esté libre
+    if (escaneando) intervalo = setInterval(capturarYEnviar, 200); 
+    
+    return () => { 
+      escaneoActivo = false; 
+      clearInterval(intervalo); 
+    };
   }, [escaneando]);
 
   const getColorClase = () => {
@@ -89,7 +109,6 @@ function Escaner() {
 
   const formatearHoraActual = () => new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
-  // ESTILOS DINÁMICOS DEPENDIENDO SI ES ENTRADA O SALIDA
   const isIngreso = accionVehiculo === 'INGRESO';
   const estiloTarjeta = isIngreso 
     ? { bgIcon: 'bg-green-100', textIcon: 'text-green-600', borderIcon: 'border-green-200', titulo: 'Acceso Concedido' }
@@ -114,8 +133,6 @@ function Escaner() {
         
         <div className="w-[500px] h-[375px] bg-white rounded-xl border border-slate-200 p-6 flex flex-col items-center justify-between shadow-lg shadow-slate-100 animate-fade-in-up">
           <div className="flex flex-col items-center gap-3">
-            
-            {/* Ícono Dinámico */}
             <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md border ${estiloTarjeta.bgIcon} ${estiloTarjeta.textIcon} ${estiloTarjeta.borderIcon}`}>
               {isIngreso ? (
                 <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
@@ -123,7 +140,6 @@ function Escaner() {
                 <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               )}
             </div>
-            
             <h3 className="text-xl font-bold text-slate-800 tracking-tight">{estiloTarjeta.titulo}</h3>
           </div>
 
