@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 
 function Registro({ onRegistroExitoso }) {
-  // 1. Estos son los estados que probablemente se borraron
   const [formData, setFormData] = useState({
     Nombres: '',
     id_universitario: '',
@@ -31,7 +30,6 @@ function Registro({ onRegistroExitoso }) {
         setMensaje({ texto: '¡Vehículo registrado con éxito!', tipo: 'exito' });
         setFormData({ Nombres: '', id_universitario: '', Placa: '', Tipo_vehiculo: 'Automóvil', color: '' });
         
-        // 2. Aquí llamamos al gatillo para actualizar la tabla
         if (onRegistroExitoso) {
           onRegistroExitoso();
         }
@@ -44,53 +42,55 @@ function Registro({ onRegistroExitoso }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="bg-slate-800 px-5 py-3">
-        <h2 className="text-sm font-bold text-white">Nuevo Vehículo</h2>
+    // Diseño ampliado con sombras más suaves y mayor padding
+    <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden w-full">
+      <div className="bg-slate-800 px-8 py-5">
+        <h2 className="text-lg font-bold text-white tracking-wide">Registro de Nuevo Vehículo</h2>
+        <p className="text-slate-300 text-sm mt-1">Ingrese los datos para autorizar el acceso al establecimiento.</p>
       </div>
 
-      <div className="p-5">
+      <div className="p-8">
         {mensaje && (
-          <div className={`mb-4 p-2.5 rounded-lg text-xs font-medium text-center ${mensaje.tipo === 'exito' ? 'bg-green-50 text-green-700' : mensaje.tipo === 'error' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
+          <div className={`mb-6 p-4 rounded-xl text-sm font-semibold text-center shadow-sm ${mensaje.tipo === 'exito' ? 'bg-green-50 text-green-700 border border-green-200' : mensaje.tipo === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
             {mensaje.texto}
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div className="grid grid-cols-2 gap-5">
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Propietario</label>
-              <input type="text" name="Nombres" value={formData.Nombres} onChange={handleChange} required className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500" />
+              <label className="block text-sm font-bold text-slate-700 mb-2">Nombre del Propietario</label>
+              <input type="text" name="Nombres" value={formData.Nombres} onChange={handleChange} required className="w-full px-4 py-2.5 text-base bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" placeholder="Ej: Juan Pérez" />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">ID Univ.</label>
-              <input type="text" name="id_universitario" value={formData.id_universitario} onChange={handleChange} required className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500" />
+              <label className="block text-sm font-bold text-slate-700 mb-2">ID Universitario / Cédula</label>
+              <input type="text" name="id_universitario" value={formData.id_universitario} onChange={handleChange} required className="w-full px-4 py-2.5 text-base bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Placa</label>
-              <input type="text" name="Placa" value={formData.Placa} onChange={handleChange} required maxLength="6" className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500 uppercase font-bold tracking-widest" />
+              <label className="block text-sm font-bold text-slate-700 mb-2">Placa del Vehículo</label>
+              <input type="text" name="Placa" value={formData.Placa} onChange={handleChange} required maxLength="6" className="w-full px-4 py-2.5 text-lg bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 uppercase font-black tracking-widest text-blue-900" placeholder="XYZ123" />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Tipo</label>
-              <select name="Tipo_vehiculo" value={formData.Tipo_vehiculo} onChange={handleChange} className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500">
-                <option value="Automóvil">Auto</option>
-                <option value="Motocicleta">Moto</option>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Tipo de Vehículo</label>
+              <select name="Tipo_vehiculo" value={formData.Tipo_vehiculo} onChange={handleChange} className="w-full px-4 py-2.5 text-base bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                <option value="Automóvil">Automóvil</option>
+                <option value="Motocicleta">Motocicleta</option>
                 <option value="Camioneta">Camioneta</option>
                 <option value="Otro">Otro</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Color</label>
-              <input type="text" name="color" value={formData.color} onChange={handleChange} required className="w-full px-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded outline-none focus:border-blue-500" />
+              <label className="block text-sm font-bold text-slate-700 mb-2">Color</label>
+              <input type="text" name="color" value={formData.color} onChange={handleChange} required className="w-full px-4 py-2.5 text-base bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" placeholder="Ej: Negro" />
             </div>
           </div>
 
-          <button type="submit" className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm transition-all shadow-md">
-            Registrar
+          <button type="submit" className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-base transition-all shadow-lg hover:shadow-blue-500/30">
+            Guardar Vehículo
           </button>
         </form>
       </div>
